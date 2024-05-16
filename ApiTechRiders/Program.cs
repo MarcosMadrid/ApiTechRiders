@@ -20,7 +20,7 @@ builder.Services.AddTransient<ApiImagenesService>();
 
 // Add services to the container.
 string connectionString =
-    builder.Configuration.GetConnectionString("SqlLocal");
+    builder.Configuration.GetConnectionString("SqlDesarrolloAzure");
 builder.Services.AddTransient<RepositoryTechRiders>();
 builder.Services.AddDbContext<TechRidersContext>
     (options => options.UseSqlServer(connectionString));
