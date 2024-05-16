@@ -1,4 +1,5 @@
-﻿using ApiTechRiders.Models;
+﻿using ApiTechRiders.Helpers;
+using ApiTechRiders.Models;
 using ApiTechRiders.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,10 +16,12 @@ namespace ApiTechRiders.Controllers
     public class QueryToolsController : ControllerBase
     {
         private RepositoryTechRiders repo;
+        private HelperPathProvider pathProvider;
 
-        public QueryToolsController(RepositoryTechRiders repo)
+        public QueryToolsController(RepositoryTechRiders repo, HelperPathProvider helperPathProvider)
         {
             this.repo = repo;
+            this.pathProvider = helperPathProvider;
         }
 
         // GET: api/querytools/charlasviewall
@@ -308,7 +311,18 @@ namespace ApiTechRiders.Controllers
         public async Task<ActionResult<List<TodoTechRider>>>
             TodosTechRidersActivos()
         {
-            return await this.repo.GetTodosTechRidersViewAsync();
+            List<TodoTechRider> todoTechRiders = await this.repo.GetTodosTechRidersViewAsync();
+            if (todoTechRiders != null)
+            {
+                foreach (TodoTechRider techRider in todoTechRiders)
+                {
+                    if (techRider.Imagen != null)
+                    {
+                        techRider.Imagen = this.pathProvider.MapUrlPath(Folders.Images) + techRider.Imagen;
+                    }
+                }
+            }
+            return todoTechRiders;
         }
 
         // GET: api/querytools/TodasPeticionesFormato
