@@ -14,7 +14,7 @@ namespace ApiTechRiders.Helpers
         public HelperFilesManager(HelperPathProvider helperPathProvider)
         {
             this.pathProvider = helperPathProvider;        
-            BuildFolderImgs(Folders.Images);
+            this.BuildFolderImgs(Folders.Images);
             //La x es el lugar que tomara el UserId para la imagen.
             this.formatFileImageUser = "user-image-x.jpeg";
         }
