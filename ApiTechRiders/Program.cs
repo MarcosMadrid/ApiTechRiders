@@ -1,26 +1,21 @@
-//using ApiCoreCrudDepartamentos.Data;
-//using ApiCoreCrudDepartamentos.Repositories;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 using NSwag.Generation.Processors.Security;
-using NSwag;
-using Swashbuckle.AspNetCore.SwaggerUI;
-using ApiTechRiders.Helpers;
-using ApiTechRiders.Repositories;
-using ApiTechRiders.Data;
 using Hellang.Middleware.ProblemDetails;
-using ApiTechRiders.Services;
+using Swashbuckle.AspNetCore.SwaggerUI;
+using Microsoft.EntityFrameworkCore;
+using NSwag;
+using Microsoft.OpenApi.Models;
+using ApiTechRiders.Repositories;
+using ApiTechRiders.Helpers;
+using ApiTechRiders.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 //ENABLE PROBLEM DETAILS
 builder.Services.AddProblemDetails();
 
-builder.Services.AddTransient<ApiImagenesService>();
-
 // Add services to the container.
 string connectionString =
-    builder.Configuration.GetConnectionString("SqlLocal");
+    builder.Configuration.GetConnectionString("SqlDesarrolloAzure");
 builder.Services.AddTransient<RepositoryTechRiders>();
 builder.Services.AddDbContext<TechRidersContext>
     (options => options.UseSqlServer(connectionString));
@@ -55,10 +50,15 @@ builder.Services.AddTransient<HelperTokenPass>();
 //AÑADIMOS AUTENTIFICACION A NUESTRO SERVICIO
 builder.Services.AddAuthentication(helper.GetAuthOptions())
     .AddJwtBearer(helper.GetJwtOptions());
+
 builder.Services.AddTransient<HelperToken>(x => helper);
+builder.Services.AddTransient<HelperFilesManager>();
+builder.Services.AddTransient<HelperPathProvider>();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
 app.UseProblemDetails();
 app.UseOpenApi();
 

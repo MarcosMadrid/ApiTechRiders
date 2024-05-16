@@ -1,14 +1,14 @@
-﻿using ApiTechRiders.Models;
+﻿using ApiTechRiders.Helpers;
+using ApiTechRiders.Models;
 using ApiTechRiders.Models.MultiDataModels;
-using ApiTechRiders.Repositories;
-using ApiTechRiders.Services;
+using System.Security.Claims;
+using System.Linq;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using Newtonsoft.Json;
-using System.Linq;
-using System.Security.Claims;
+using ApiTechRiders.Repositories;
 
 namespace ApiTechRiders.Controllers
 {
@@ -18,11 +18,13 @@ namespace ApiTechRiders.Controllers
     public class UsuariosController : ControllerBase
     {
         private RepositoryTechRiders repo;
-        private ApiImagenesService apiImagenes;
-        public UsuariosController(RepositoryTechRiders repo, ApiImagenesService apiImagenes)
+        private HelperFilesManager filesManager;
+        private HelperPathProvider pathProvider;
+        public UsuariosController(RepositoryTechRiders repo, HelperFilesManager filesManager, HelperPathProvider pathProvider)
         {
             this.repo = repo;
-            this.apiImagenes = apiImagenes;
+            this.filesManager = filesManager;
+            this.pathProvider = pathProvider;
         }
 
         // GET: api/usuarios
@@ -38,7 +40,16 @@ namespace ApiTechRiders.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<List<Usuario>>> Get()
         {
-            return await this.repo.GetUsuarioAsync();
+
+            List<Usuario> usuarios = await this.repo.GetUsuarioAsync();
+            foreach (Usuario usuario in usuarios)
+            {
+                if (usuario.Imagen != null)
+                {
+                    usuario.Imagen = this.pathProvider.MapUrlPath(Folders.Images) + usuario.Imagen;
+                }
+            }
+            return usuarios;
         }
 
         // GET: api/usuarios/UsersFormato
@@ -120,14 +131,15 @@ namespace ApiTechRiders.Controllers
             InsertUsuario([FromForm] UsuarioFormData usuarioFormData)
         {
             Usuario usuarioRequest = usuarioFormData.Usuario;
-            string contentType = usuarioFormData.Imagen.ContentType.Split("/").Last();
-            usuarioRequest.Imagen = "user-img-";
-            Usuario usuarioNew =
-                await this.repo.InsertUsuarioAsync
-                (usuarioRequest, contentType);
-            string? urlImagen =
-                await apiImagenes.PostImagen
-                (usuarioFormData.Imagen, usuarioNew.Imagen);
+            IFormFile imagen = usuarioFormData.Imagen;
+            Usuario usuarioNew;
+
+            if (imagen != null)
+            {
+                usuarioRequest.Imagen = this.filesManager.GetNameImage(usuarioRequest.IdUsuario);
+            }
+            usuarioNew = await this.repo.InsertUsuarioAsync(usuarioRequest);
+            await this.filesManager.CreateImg(usuarioNew.Imagen, imagen.OpenReadStream());            
             return usuarioNew;
         }
 
@@ -147,25 +159,31 @@ namespace ApiTechRiders.Controllers
             ([FromForm] UsuarioFormData usuarioFormData)
         {
             Usuario usuarioRequest = usuarioFormData.Usuario;
-            var usuarioFind = await this.repo.FindUsuarioAsync(usuarioRequest.IdUsuario);
+            IFormFile imagen = usuarioFormData.Imagen;
+            Usuario usuarioFind = await this.repo.FindUsuarioAsync(usuarioRequest.IdUsuario);
+
             if (usuarioFind == null)
             {
                 return NotFound();
             }
-            if (usuarioFormData.Imagen != null)
-            {
-                string token = Request.Headers["Authorization"]!;
-                //string contentType = usuarioFormData.Imagen.ContentType.Split("/").Last();                
-                string contentType = "jpeg";
-                usuarioRequest.Imagen = "user-img-" + usuarioFind.IdUsuario + "." + contentType;
-                await apiImagenes.UpdateImagen(usuarioFormData.Imagen, usuarioRequest.Imagen, token);
+            if (imagen != null)
+            {                
+                string imageName = this.filesManager.GetNameImage(usuarioRequest.IdUsuario);
+                usuarioRequest.Imagen = imageName;
+                try
+                {
+                    await filesManager.UpdateImg(imageName, usuarioFormData.Imagen.OpenReadStream());
+                }
+                catch (FileNotFoundException ex)
+                {
+                    await filesManager.CreateImg(imageName, usuarioFormData.Imagen.OpenReadStream());
+                }
             }
             else
             {
-                if (usuarioFind.Imagen != null && usuarioFormData.Imagen == null)
+                if (usuarioRequest.Imagen == null )
                 {
-                    string token = Request.Headers["Authorization"]!;
-                    await apiImagenes.DeleteImagen(token);                    
+                    usuarioRequest.Imagen = usuarioFind.Imagen;
                 }
             }
             Usuario usuario = await this.repo.UpdateUsuarioAsync(usuarioRequest);
@@ -219,6 +237,17 @@ namespace ApiTechRiders.Controllers
             {
                 return NotFound();
             }
+            if (user.Imagen != null)
+            {                    
+                try
+                {
+                    filesManager.DeleteImg(user.Imagen);
+                }
+                catch (FileNotFoundException ex)
+                {
+                    Console.Write(ex.Message);
+                }
+            }            
             await this.repo.DeleteUsuarioAsync(id);
             return Ok();
         }
@@ -243,6 +272,10 @@ namespace ApiTechRiders.Controllers
             Usuario user = JsonConvert.DeserializeObject<Usuario>(jsonUser);
             int idUser = user.IdUsuario;
             Usuario userValid = await this.repo.FindUsuarioAsync(idUser);
+            if (userValid.Imagen != null)
+            {
+                userValid.Imagen = this.pathProvider.MapUrlPath(Folders.Images) + userValid.Imagen;                
+            }
             return userValid;
         }
 

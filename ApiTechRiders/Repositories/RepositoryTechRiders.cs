@@ -1422,29 +1422,9 @@ namespace ApiTechRiders.Repositories
             newUsuario.Apellidos = requestUsuario.Apellidos;
             newUsuario.Email = requestUsuario.Email;
             newUsuario.LinkedInVisible = requestUsuario.LinkedInVisible;
+            newUsuario.Imagen = requestUsuario.Imagen != null ?
+                requestUsuario.Imagen.Replace("0", newUsuario.IdUsuario.ToString()) : null;
 
-            this.context.Usuarios.Add(newUsuario);
-            await this.context.SaveChangesAsync();
-            return newUsuario;
-        }
-
-        public async Task<Usuario> InsertUsuarioAsync
-            (Usuario requestUsuario, string contentType)
-        {
-            Usuario newUsuario = new Usuario();
-            newUsuario.IdUsuario = await this.GetMaxIdUsuario();
-            newUsuario.IdEmpresaCentro = requestUsuario.IdEmpresaCentro;
-            newUsuario.IdProvincia = requestUsuario.IdProvincia;
-            newUsuario.IdRole = requestUsuario.IdRole;
-            newUsuario.LinkedIn = requestUsuario.LinkedIn;
-            newUsuario.Nombre = requestUsuario.Nombre;
-            newUsuario.Password = requestUsuario.Password;
-            newUsuario.Telefono = requestUsuario.Telefono;
-            newUsuario.Estado = requestUsuario.Estado;
-            newUsuario.Apellidos = requestUsuario.Apellidos;
-            newUsuario.Email = requestUsuario.Email;
-            newUsuario.LinkedInVisible = requestUsuario.LinkedInVisible;
-            newUsuario.Imagen = requestUsuario.Imagen + newUsuario.IdUsuario + "." + contentType;            
             this.context.Usuarios.Add(newUsuario);
             await this.context.SaveChangesAsync();
             return newUsuario;
@@ -1466,7 +1446,9 @@ namespace ApiTechRiders.Repositories
             newUsuario.Apellidos = requestUsuario.Apellidos;
             newUsuario.Email = requestUsuario.Email;
             newUsuario.LinkedInVisible = requestUsuario.LinkedInVisible;
-            newUsuario.Imagen = requestUsuario.Imagen;
+            newUsuario.Imagen = requestUsuario.Imagen != null ?
+               requestUsuario.Imagen.Replace("x", newUsuario.IdUsuario.ToString()) : null;
+
             await this.context.SaveChangesAsync();
             return newUsuario;
         }
