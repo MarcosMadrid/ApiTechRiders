@@ -137,9 +137,13 @@ namespace ApiTechRiders.Controllers
             if (imagen != null)
             {
                 usuarioRequest.Imagen = this.filesManager.GetNameImage(usuarioRequest.IdUsuario);
+                usuarioNew = await this.repo.InsertUsuarioAsync(usuarioRequest);
+                await this.filesManager.CreateImg(usuarioNew.Imagen, imagen.OpenReadStream());
             }
-            usuarioNew = await this.repo.InsertUsuarioAsync(usuarioRequest);
-            await this.filesManager.CreateImg(usuarioNew.Imagen, imagen.OpenReadStream());            
+            else
+            {
+                usuarioNew = await this.repo.InsertUsuarioAsync(usuarioRequest);
+            }
             return usuarioNew;
         }
 
